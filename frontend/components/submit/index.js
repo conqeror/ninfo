@@ -16,7 +16,7 @@ const defaultState = {
 	storeTeamstatus
 })
 export default class Submit extends Component {
-	state = defaultState;
+	state = { ...defaultState, time: moment().unix() };
 
 	componentDidMount() {
 		const { secret, code } = this.props;
@@ -27,8 +27,8 @@ export default class Submit extends Component {
 			this.handleSubmit(code);
 		}
 		this.interval = setInterval(
-			() => this.setState({ time: moment.unix() }),
-			60000
+			() => this.setState({ time: moment().unix() }),
+			1000
 		);
 	}
 
@@ -59,6 +59,7 @@ export default class Submit extends Component {
 	};
 
 	render({ teamstatus }, { pass, wrongCode, time }) {
+		console.log(time);
 		const {
 			hint,
 			dead,
@@ -73,7 +74,7 @@ export default class Submit extends Component {
 			<div class={style.home}>
 				<h1>Stanovište {level}</h1>
 				{arrival_time && (
-					<p>Prišli ste o {moment.unix(arrival_time).format("hh:mm")}.</p>
+					<p>Prišli ste o {moment.unix(arrival_time).format("HH:mm")}.</p>
 				)}
 				{hint && !dead && <p>Hint: {hint}</p>}
 				{dead && <p>Dead: {dead}</p>}
@@ -89,7 +90,7 @@ export default class Submit extends Component {
 							Zobrať hint
 						</button>
 						{!canTakeHint && (
-							<a> (od {moment.unix(hint_time).format("hh:mm")})</a>
+							<a> (od {moment.unix(hint_time).format("HH:mm")})</a>
 						)}
 					</div>
 				)}
@@ -100,7 +101,7 @@ export default class Submit extends Component {
 							Zobrať dead
 						</button>
 						{!canTakeDead && (
-							<a> (od {moment.unix(dead_time).format("hh:mm")})</a>
+							<a> (od {moment.unix(dead_time).format("HH:mm")})</a>
 						)}
 					</div>
 				)}
