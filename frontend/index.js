@@ -4,7 +4,7 @@ import { h, render } from "preact";
 import axios from "axios";
 import "./style";
 
-axios.defaults.baseURL = "http://localhost:3000/";
+axios.defaults.baseURL = "http://nodla.sk/api";
 axios.defaults.headers.post["Content-Type"] = "application/json";
 
 let root;
