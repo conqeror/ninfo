@@ -134,8 +134,8 @@ app.put("/hint", async (req, res) => {
 	]);
 	const query = {
 		timestamp: moment().format("HH:mm:ss"),
-		team_id: team[0].team_id,
-		level: team[0].level,
+		team_id: team.team_id,
+		level: team.level,
 		action_type: "HINT"
 	};
 	pool.query("INSERT INTO `actions` SET ?", query).catch(e => console.log(e));
@@ -171,8 +171,8 @@ app.put("/dead", async (req, res) => {
 	]);
 	const query = {
 		timestamp: moment().format("HH:mm:ss"),
-		team_id: team[0].team_id,
-		level: team[0].level,
+		team_id: team.team_id,
+		level: team.level,
 		action_type: "DEAD"
 	};
 	pool.query("INSERT INTO `actions` SET ?", query).catch(e => console.log(e));

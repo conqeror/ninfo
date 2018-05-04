@@ -41,11 +41,9 @@ export default class Submit extends Component {
 	handleSubmit = () => {
 		const { pass } = this.state;
 		const { secret } = this.props;
-		console.log(pass, secret);
 		axios
 			.post("level/", { secret, code: pass })
 			.then(teamstatus => {
-				console.log(teamstatus);
 				this.props.storeTeamstatus(teamstatus.data);
 				this.setState(defaultState);
 				route("/s", true);
@@ -57,9 +55,9 @@ export default class Submit extends Component {
 
 	handleHint = () => {
 		const { secret } = this.props;
-		axios
-			.put("hint/", { secret })
-			.then(teamstatus => this.props.storeTeamstatus(teamstatus.data));
+		axios.put("hint/", { secret }).then(teamstatus => {
+			this.props.storeTeamstatus(teamstatus.data);
+		});
 	};
 
 	handleDead = () => {
@@ -73,7 +71,6 @@ export default class Submit extends Component {
 					onClick: () => {
 						axios.put("dead/", { secret }).then(teamstatus => {
 							this.props.storeTeamstatus(teamstatus.data);
-							console.log(teamstatus);
 						});
 					}
 				},
