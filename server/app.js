@@ -42,7 +42,10 @@ app.post("/level", async (req, res) => {
 	let code, secret, team, level, oldLevel;
 	let late = false;
 	try {
-		code = req.body.code;
+		code = req.body.code
+			.normalize("NFD")
+			.replace(/[\u0300-\u036f]/g, "")
+			.toLowerCase();
 		secret = req.body.secret;
 	} catch (e) {
 		return res.status(500).send("bad request");
