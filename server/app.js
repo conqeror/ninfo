@@ -15,7 +15,7 @@ const pool = mysql.createPool({
 	user: process.env.DBUSER,
 	password: process.env.PASSWORD,
 	database: process.env.DATABASE,
-	connectionLimit: 10
+	connectionLimit: 160
 });
 
 app.post("/login", async (req, res) => {
@@ -39,7 +39,8 @@ app.post("/login", async (req, res) => {
 });
 
 app.post("/level", async (req, res) => {
-	let code, secret, team, level;
+	let code, secret, team, level, oldLevel;
+	let late = false;
 	try {
 		code = req.body.code;
 		secret = req.body.secret;
@@ -51,13 +52,22 @@ app.post("/level", async (req, res) => {
 			secret
 		]);
 		level = await pool.query("SELECT * FROM `levels` WHERE `code` = ?", [code]);
+		if (level[0].levelnum >= 2) {
+			oldLevel = await pool.query(
+				"SELECT * FROM `levels` WHERE `levelnum` = ?",
+				[level[0].levelnum - 1]
+			);
+		}
 	} catch (e) {
 		console.log("solve query failed");
 		return res.status(500).send("server error");
 	}
+	if (level[0].levelnum >= 2 && moment.unix(oldLevel[0].dead_time).isBefore())
+		late = true;
 	if (isEmpty(level)) return res.status(403).send("bad code");
 	const { levelnum, hint_time, dead_time, leave_time } = level[0];
-	if (team[0].level + 1 !== levelnum) res.status(403).send("wrong level");
+	if (team[0].level + 1 !== levelnum)
+		return res.status(403).send("wrong level");
 	const newLevelnum = level[0].levelnum;
 	const newTime = moment().unix();
 	const newHintTime = Math.min(
@@ -76,10 +86,10 @@ app.post("/level", async (req, res) => {
 			return res.status(500).send("server error");
 		});
 	const query = {
-		timestamp: newTime,
+		timestamp: moment().format("HH:mm:ss"),
 		team_id: team[0].team_id,
 		level: newLevelnum,
-		action_type: "LEVEL"
+		action_type: late ? "LATE_LEVEL" : "LEVEL"
 	};
 	pool.query("INSERT INTO `actions` SET ?", query).catch(e => console.log(e));
 	return res.json({
@@ -123,7 +133,7 @@ app.put("/hint", async (req, res) => {
 		secret
 	]);
 	const query = {
-		timestamp: moment().unix(),
+		timestamp: moment().format("HH:mm:ss"),
 		team_id: team[0].team_id,
 		level: team[0].level,
 		action_type: "HINT"
@@ -148,7 +158,7 @@ app.put("/dead", async (req, res) => {
 		]);
 	} catch (e) {
 		console.log("dead query failed");
-		res.status(500).send("server error");
+		return res.status(500).send("server error");
 	}
 	if (isEmpty(level)) return res.status(403).send("bad secret");
 	level = level[0];
@@ -160,7 +170,7 @@ app.put("/dead", async (req, res) => {
 		secret
 	]);
 	const query = {
-		timestamp: moment().unix(),
+		timestamp: moment().format("HH:mm:ss"),
 		team_id: team[0].team_id,
 		level: team[0].level,
 		action_type: "DEAD"

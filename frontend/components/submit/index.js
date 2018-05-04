@@ -26,11 +26,11 @@ export default class Submit extends Component {
 			route(code ? `/${code}` : "/", true);
 		}
 		if (code) {
-			this.handleSubmit(code);
+			this.setState({ pass: code }, this.handleSubmit);
 		}
 		this.interval = setInterval(
 			() => this.setState({ time: moment().unix() }),
-			1000
+			10000
 		);
 	}
 
@@ -38,18 +38,20 @@ export default class Submit extends Component {
 		clearInterval(this.interval);
 	}
 
-	handleSubmit = code => {
+	handleSubmit = () => {
 		const { pass } = this.state;
 		const { secret } = this.props;
+		console.log(pass, secret);
 		axios
-			.post("level/", { secret, code: pass || code })
+			.post("level/", { secret, code: pass })
 			.then(teamstatus => {
+				console.log(teamstatus);
 				this.props.storeTeamstatus(teamstatus.data);
 				this.setState(defaultState);
 				route("/s", true);
 			})
 			.catch(() => {
-				this.setState({ wrongCode: pass || code });
+				this.setState({ wrongCode: pass });
 			});
 	};
 
@@ -69,9 +71,10 @@ export default class Submit extends Component {
 				{
 					label: "Áno",
 					onClick: () => {
-						axios
-							.put("dead/", { secret })
-							.then(teamstatus => this.props.storeTeamstatus(teamstatus.data));
+						axios.put("dead/", { secret }).then(teamstatus => {
+							this.props.storeTeamstatus(teamstatus.data);
+							console.log(teamstatus);
+						});
 					}
 				},
 				{ label: "Nie" }
@@ -89,7 +92,6 @@ export default class Submit extends Component {
 			level
 		} = teamstatus;
 		const canTakeHint = moment.unix(hint_time).isBefore(moment.unix(time));
-		console.log(canTakeHint);
 		return (
 			<div class={style.home}>
 				<h1>Stanovište {level}</h1>
@@ -104,10 +106,11 @@ export default class Submit extends Component {
 				<br />
 				{wrongCode && <p>{wrongCode} je nesprávny kód.</p>}
 				<br />
-				{!hint && (
+				{hint_time &&
+					!hint && (
 					<div>
 						<button onClick={this.handleHint} disabled={!canTakeHint}>
-							Zobrať hint
+								Nápoveda
 						</button>
 						{!canTakeHint && (
 							<a> (od {moment.unix(hint_time).format("HH:mm")})</a>
@@ -115,10 +118,11 @@ export default class Submit extends Component {
 					</div>
 				)}
 				<br />
-				{!dead && (
+				{hint_time &&
+					!dead && (
 					<div>
 						<button onClick={this.handleDead} disabled={!canTakeHint}>
-							Zobrať dead
+								Absolútna nápoveda
 						</button>
 						{!canTakeHint && (
 							<a> (od {moment.unix(hint_time).format("HH:mm")})</a>
@@ -126,10 +130,12 @@ export default class Submit extends Component {
 					</div>
 				)}
 				<br />
-				<a>
-					Odporúčame odísť alebo zobrať dead do
-					{` ${moment.unix(leave_time).format("HH:mm")}`}
-				</a>
+				{leave_time && (
+					<a>
+						Odporúčame odísť alebo zobrať absolútnu nápovedu do
+						{` ${moment.unix(leave_time).format("HH:mm")}`}
+					</a>
+				)}
 			</div>
 		);
 	}

@@ -32,7 +32,7 @@ export default class Login extends Component {
 				route(code ? `/s/${code}` : "/s/", true);
 			})
 			.catch(() => {
-				this.setState({ error: "Bad password" });
+				this.setState({ error: "Zlé heslo" });
 			});
 	};
 
@@ -43,6 +43,7 @@ export default class Login extends Component {
 				Tajná fráza:
 				<input type="text" value={secret} onInput={linkState(this, "secret")} />
 				<button onClick={this.handleSubmit}>Submit</button>
+				<br />
 				<a>{error}</a>
 			</div>
 		);
