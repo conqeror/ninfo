@@ -9,7 +9,6 @@ export default class Header extends Component {
 				<h1>Ninfo</h1>
 				<nav>
 					<Link href="/s">Submit</Link>
-					<Link href="/r">Results</Link>
 				</nav>
 			</header>
 		);

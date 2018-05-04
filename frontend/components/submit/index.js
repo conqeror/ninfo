@@ -1,6 +1,8 @@
 import { h, Component } from "preact";
 import { route } from "preact-router";
 import { connect } from "preact-redux";
+import { confirmAlert } from "react-confirm-alert";
+import "react-confirm-alert/src/react-confirm-alert.css";
 import { storeTeamstatus } from "../../actions";
 import axios from "axios";
 import moment from "moment";
@@ -58,18 +60,36 @@ export default class Submit extends Component {
 			.then(teamstatus => this.props.storeTeamstatus(teamstatus.data));
 	};
 
+	handleDead = () => {
+		const { secret } = this.props;
+		confirmAlert({
+			title: "Zobrať dead",
+			message: "Naozaj chcete zobrať dead?",
+			buttons: [
+				{
+					label: "Áno",
+					onClick: () => {
+						axios
+							.put("dead/", { secret })
+							.then(teamstatus => this.props.storeTeamstatus(teamstatus.data));
+					}
+				},
+				{ label: "Nie" }
+			]
+		});
+	};
+
 	render({ teamstatus }, { pass, wrongCode, time }) {
-		console.log(time);
 		const {
 			hint,
 			dead,
 			arrival_time,
 			hint_time,
-			dead_time,
+			leave_time,
 			level
 		} = teamstatus;
 		const canTakeHint = moment.unix(hint_time).isBefore(moment.unix(time));
-		const canTakeDead = moment.unix(dead_time).isBefore(moment.unix(time));
+		console.log(canTakeHint);
 		return (
 			<div class={style.home}>
 				<h1>Stanovište {level}</h1>
@@ -97,14 +117,19 @@ export default class Submit extends Component {
 				<br />
 				{!dead && (
 					<div>
-						<button onClick={this.handleDead} disabled={!canTakeDead}>
+						<button onClick={this.handleDead} disabled={!canTakeHint}>
 							Zobrať dead
 						</button>
-						{!canTakeDead && (
-							<a> (od {moment.unix(dead_time).format("HH:mm")})</a>
+						{!canTakeHint && (
+							<a> (od {moment.unix(hint_time).format("HH:mm")})</a>
 						)}
 					</div>
 				)}
+				<br />
+				<a>
+					Odporúčame odísť alebo zobrať dead do
+					{` ${moment.unix(leave_time).format("HH:mm")}`}
+				</a>
 			</div>
 		);
 	}

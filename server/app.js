@@ -53,34 +53,42 @@ app.post("/level", async (req, res) => {
 		level = await pool.query("SELECT * FROM `levels` WHERE `code` = ?", [code]);
 	} catch (e) {
 		console.log("solve query failed");
-		res.status(500).send("server error");
+		return res.status(500).send("server error");
 	}
-	if (isEmpty(level)) res.status(403).send("bad code");
-	const { levelnum, hint_time, dead_time } = level[0];
+	if (isEmpty(level)) return res.status(403).send("bad code");
+	const { levelnum, hint_time, dead_time, leave_time } = level[0];
 	if (team[0].level + 1 !== levelnum) res.status(403).send("wrong level");
 	const newLevelnum = level[0].levelnum;
 	const newTime = moment().unix();
-	const newHintTime = moment()
-		.add(hint_time, "m")
-		.unix();
-	const newDeadTime = moment()
-		.add(dead_time, "m")
-		.unix();
+	const newHintTime = Math.min(
+		moment()
+			.add(hint_time, "m")
+			.unix(),
+		Math.max(Math.floor((moment().unix() + leave_time) / 2), moment().unix())
+	);
 	pool
 		.query(
-			"UPDATE `teamstatus` SET `level` = ?, `arrival_time` = ?, `hint_time` = ?, `dead_time` = ?, hint = '', dead = '' WHERE `secret` = ?",
-			[newLevelnum, newTime, newHintTime, newDeadTime, secret]
+			"UPDATE `teamstatus` SET `level` = ?, `arrival_time` = ?, `hint_time` = ?, `leave_time` = ?, `dead_time` = ?, hint = '', dead = '' WHERE `secret` = ?",
+			[newLevelnum, newTime, newHintTime, leave_time, dead_time, secret]
 		)
 		.catch(e => {
 			console.log(e);
-			res.status(500).send("server error");
+			return res.status(500).send("server error");
 		});
+	const query = {
+		timestamp: newTime,
+		team_id: team[0].team_id,
+		level: newLevelnum,
+		action_type: "LEVEL"
+	};
+	pool.query("INSERT INTO `actions` SET ?", query).catch(e => console.log(e));
 	return res.json({
 		...team[0],
 		level: newLevelnum,
 		arrival_time: newTime,
 		hint_time: newHintTime,
-		dead_time: newDeadTime,
+		leave_time,
+		dead_time,
 		hint: "",
 		dead: ""
 	});
@@ -103,18 +111,25 @@ app.put("/hint", async (req, res) => {
 	} catch (e) {
 		console.log("hint query failed");
 		console.log(secret, team, level);
-		res.status(500).send("server error");
+		return res.status(500).send("server error");
 	}
-	if (isEmpty(level)) res.status(403).send("bad secret");
+	if (isEmpty(level)) return res.status(403).send("bad secret");
 	level = level[0];
 	team = team[0];
 	if (moment().isBefore(moment.unix(team.hint_time)))
-		res.status(403).send("too early");
+		return res.status(403).send("too early");
 	pool.query("UPDATE `teamstatus` SET `hint` = ? WHERE `secret` = ?", [
 		level.hint,
 		secret
 	]);
-	res.json({ ...team, hint: level.hint });
+	const query = {
+		timestamp: moment().unix(),
+		team_id: team[0].team_id,
+		level: team[0].level,
+		action_type: "HINT"
+	};
+	pool.query("INSERT INTO `actions` SET ?", query).catch(e => console.log(e));
+	return res.json({ ...team, hint: level.hint });
 });
 
 app.put("/dead", async (req, res) => {
@@ -135,27 +150,23 @@ app.put("/dead", async (req, res) => {
 		console.log("dead query failed");
 		res.status(500).send("server error");
 	}
-	if (isEmpty(level)) res.status(403).send("bad secret");
+	if (isEmpty(level)) return res.status(403).send("bad secret");
 	level = level[0];
 	team = team[0];
-	console.log(team.dead_time, moment().unix());
-	if (moment().isBefore(moment.unix(team.dead_time)))
-		res.status(403).send("too early");
+	if (moment().isBefore(moment.unix(team.hint_time)))
+		return res.status(403).send("too early");
 	pool.query("UPDATE `teamstatus` SET `dead` = ? WHERE `secret` = ?", [
 		level.dead,
 		secret
 	]);
-	res.json({ ...team, dead: level.dead });
-});
-
-app.get("/teams", async (req, res) => {
-	let data;
-	try {
-		data = await pool.query("SELECT * FROM `teams`");
-	} catch (e) {
-		console.log("teams query failed");
-	}
-	return res.json(data);
+	const query = {
+		timestamp: moment().unix(),
+		team_id: team[0].team_id,
+		level: team[0].level,
+		action_type: "DEAD"
+	};
+	pool.query("INSERT INTO `actions` SET ?", query).catch(e => console.log(e));
+	return res.json({ ...team, dead: level.dead });
 });
 
 app.listen(3000, () => console.log("Ninfo listening on port 3000!"));

@@ -5,7 +5,6 @@ import { Router } from "preact-router";
 import store from "../store";
 import Header from "./header";
 import Submit from "./submit";
-import Results from "./results";
 import Login from "./login";
 
 export default class App extends Component {
@@ -28,7 +27,6 @@ export default class App extends Component {
 						<Login path="/:code" />
 						<Submit path="/s" />
 						<Submit path="/s/:code" />
-						<Results path="/r/" />
 					</Router>
 				</div>
 			</Provider>
